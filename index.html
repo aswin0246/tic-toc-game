@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic-Tac-Toe</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #111;
+      color: #39ff14; /* Green neon */
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 40px;
+      color: #39ff14; /* Neon green */
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      justify-content: center;
+      margin: 40px auto;
+      position: relative;
+    }
+
+    .cell {
+      background-color: #222;
+      border: 2px solid #444;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #39ff14; /* Neon green */
+      cursor: pointer;
+    }
+
+    .cell.x {
+      color: #ff007f; /* Neon pink */
+    }
+
+    .cell.o {
+      color: #0000ff; /* Neon blue */
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .strike {
+      position: absolute;
+      height: 4px;
+      background-color: #39ff14; /* Neon green */
+      top: 0;
+      left: 0;
+      transform-origin: 0 50%;
+      transition: all 0.4s ease;
+      z-index: 1;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #333;
+      border: none;
+      color: #39ff14; /* Neon green */
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    .rematch-buttons {
+      margin-top: 20px;
+    }
+
+    .name-inputs {
+      margin-top: 20px;
+    }
+
+    #startMatchBtn {
+      margin-top: 20px;
+      padding: 10px 30px;
+      background-color: #39ff14; /* Neon green */
+      border: none;
+      color: #111;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #startMatchBtn:hover {
+      background-color: #32cc00; /* Slightly darker neon green */
+    }
+
+    .name-inputs input {
+      background-color: #222;
+      border: 1px solid #444;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 4px;
+      color: white;
+      width: 200px;
+    }
+
+    #player1 {
+      color: #ff007f; /* Neon pink */
+      border-color: #ff007f; /* Neon pink */
+    }
+
+    #player2 {
+      color: #0000ff; /* Neon blue */
+      border-color: #0000ff; /* Neon blue */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Tic-Tac-Toe</h1>
+
+  <div id="gameOptions">
+    <button onclick="startGame(false)">Player vs Player</button>
+    <button onclick="startGame(true)">Player vs Computer</button>
+
+    <div class="name-inputs hidden" id="nameInputs">
+      <input id="player1" type="text" placeholder="Player 1 Name (X - Pink)" />
+      <input id="player2" type="text" placeholder="Player 2 Name (O - Blue)" />
+    </div>
+  </div>
+
+  <button id="startMatchBtn" onclick="startMatch()">Start Match</button>
+
+  <div class="board hidden" id="board">
+    <div class="strike" id="strike"></div>
+    <div class="cell" data-index="0"></div>
+    <div class="cell" data-index="1"></div>
+    <div class="cell" data-index="2"></div>
+    <div class="cell" data-index="3"></div>
+    <div class="cell" data-index="4"></div>
+    <div class="cell" data-index="5"></div>
+    <div class="cell" data-index="6"></div>
+    <div class="cell" data-index="7"></div>
+    <div class="cell" data-index="8"></div>
+  </div>
+
+  <h2 id="result" class="hidden"></h2>
+
+  <div class="rematch-buttons hidden" id="rematchOptions">
+    <button onclick="resetGame()">Rematch</button>
+    <button onclick="goHome()">Home</button>
+  </div>
+
+  <script>
+    const cells = document.querySelectorAll('.cell');
+    const result = document.getElementById('result');
+    const board = document.getElementById('board');
+    const strike = document.getElementById('strike');
+    const rematchOptions = document.getElementById('rematchOptions');
+    const gameOptions = document.getElementById('gameOptions');
+    const nameInputs = document.getElementById('nameInputs');
+    const player1Input = document.getElementById('player1');
+    const player2Input = document.getElementById('player2');
+
+    let currentPlayer = 'x';
+    let isGameOver = false;
+    let vsComputer = false;
+    let boardState = Array(9).fill(null);
+
+    let player1Name = 'Player 1';
+    let player2Name = 'Player 2';
+
+    const winPatterns = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6]
+    ];
+
+    function startGame(computer = false) {
+      vsComputer = computer;
+      if (!computer) {
+        nameInputs.classList.remove('hidden');
+      } else {
+        player1Name = 'Aswin';
+        player2Name = 'Computer';
+        startMatch();
+      }
+    }
+
+    function startMatch() {
+      gameOptions.classList.add('hidden');
+      nameInputs.classList.add('hidden');
+      board.classList.remove('hidden');
+      currentPlayer = 'x';
+    }
+
+    function resetGame() {
+      boardState.fill(null);
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('x', 'o');
+      });
+      result.classList.add('hidden');
+      rematchOptions.classList.add('hidden');
+      strike.style.width = '0';
+      currentPlayer = 'x';
+      isGameOver = false;
+    }
+
+    function goHome() {
+      resetGame();
+      board.classList.add('hidden');
+      gameOptions.classList.remove('hidden');
+      nameInputs.classList.add('hidden');
+    }
+
+    function handleClick(e) {
+      const index = e.target.dataset.index;
+      if (isGameOver || boardState[index]) return;
+
+      makeMove(index, currentPlayer);
+
+      if (vsComputer && !isGameOver) {
+        setTimeout(() => {
+          const empty = boardState.map((val, i) => val === null ? i : null).filter(i => i !== null);
+          if (empty.length) {
+            const random = empty[Math.floor(Math.random() * empty.length)];
+            makeMove(random, 'o');
+          }
+        }, 500);
+      }
+    }
+
+    function makeMove(index, player) {
+      if (boardState[index] || isGameOver) return;
+      boardState[index] = player;
+      const cell = cells[index];
+      cell.textContent = player.toUpperCase();
+      cell.classList.add(player);
+
+      if (checkWin(player)) {
+        isGameOver = true;
+        const winnerName = vsComputer
+          ? (player === 'x' ? player1Name : player2Name)
+          : (player === 'x' ? player1Input.value || "Player 1" : player2Input.value || "Player 2");
+        result.textContent = `${winnerName} wins!`;
+        result.classList.remove('hidden');
+        rematchOptions.classList.remove('hidden');
+      } else if (boardState.every(c => c)) {
+        isGameOver = true;
+        result.textContent = "It's a draw!";
+        result.classList.remove('hidden');
+        rematchOptions.classList.remove('hidden');
+      } else {
+        currentPlayer = currentPlayer === 'x' ? 'o' : 'x';
+      }
+    }
+
+    function checkWin(player) {
+      for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (boardState[a] === player && boardState[b] === player && boardState[c] === player) {
+          animateStrike(pattern);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function animateStrike(pattern) {
+      const [a, , c] = pattern;
+      const cellA = document.querySelector(`[data-index='${a}']`);
+      const cellC = document.querySelector(`[data-index='${c}']`);
+
+      const x1 = cellA.offsetLeft + cellA.offsetWidth / 2;
+      const y1 = cellA.offsetTop + cellA.offsetHeight / 2;
+      const x2 = cellC.offsetLeft + cellC.offsetWidth / 2;
+      const y2 = cellC.offsetTop + cellC.offsetHeight / 2;
+
+      const length = Math.hypot(x2 - x1, y2 - y1);
+      const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+      strike.style.transform = `translate(${x1}px, ${y1}px) rotate(${angle}deg)`;
+      strike.style.width = `${length}px`;
+    }
+
+    cells.forEach(cell => cell.addEventListener('click', handleClick));
+
+    // Start match when names are entered and PvP is chosen
+    player1Input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') startMatch();
+    });
+    player2Input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') startMatch();
+    });
+  </script>
+</body>
+</html>
